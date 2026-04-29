@@ -324,16 +324,15 @@ panel.addEventListener('mousedown', e => {
   window.addEventListener('mouseup', onUp);
 });
 
-// ── html2canvas 로드 ─────────────────────────────────────
+// ── html2canvas 백그라운드 로드 ──────────────────────────
 const script = document.createElement('script');
 script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
 script.async = true;
-script.onload = () => { libLoaded = true; document.getElementById('spinner').style.display = 'none'; };
-script.onerror = () => { document.getElementById('spinner').style.display = 'none'; };
+script.onload = () => { libLoaded = true; };
 document.body.appendChild(script);
-setTimeout(() => { document.getElementById('spinner').style.display = 'none'; }, 3000);
 
-// ── 초기화 ───────────────────────────────────────────────
+// ── 초기화 (앱 즉시 표시) ────────────────────────────────
+document.getElementById('spinner').style.display = 'none';
 renderTabs();
 renderGrid();
 renderFace();
