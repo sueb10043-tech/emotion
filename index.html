@@ -1,210 +1,344 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { RotateCcw, Download, Sparkles, Eye, Smile, Ghost } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>감정을 표정으로 표현해요</title>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Nanum Gothic', sans-serif; background: #fdf2f8; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; }
 
-const App = () => {
-  const [selectedParts, setSelectedParts] = useState({
-    brows: -1,
-    eyes: -1,
-    mouth: -1,
-    nose: -1
-  });
+  /* 로딩 스피너 */
+  #spinner { position: fixed; inset: 0; background: #fffbeb; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 20px; }
+  #spinner .emoji { font-size: 56px; animation: bounce 0.8s ease-in-out infinite alternate; }
+  #spinner .ring { width: 52px; height: 52px; border: 6px solid #fde68a; border-top: 6px solid #f59e0b; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  #spinner p { font-size: 20px; font-weight: 800; color: #92400e; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-12px); } }
 
-  const [activeTab, setActiveTab] = useState('brows');
-  const captureRef = useRef(null);
-  const [libLoaded, setLibLoaded] = useState(false);
+  /* 카드 */
+  .card { max-width: 900px; width: 100%; background: white; border-radius: 2.5rem; box-shadow: 0 25px 50px rgba(0,0,0,0.15); overflow: hidden; border: 10px solid #fde047; }
+  header { background: #facc15; padding: 16px; text-align: center; }
+  header h1 { font-size: 36px; font-weight: 900; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-    script.async = true;
-    script.onload = () => setLibLoaded(true);
-    document.body.appendChild(script);
-    return () => {
-      if (document.body.contains(script)) document.body.removeChild(script);
-    };
-  }, []);
+  /* 본문 레이아웃 */
+  .body { display: flex; flex-direction: row; padding: 16px; gap: 16px; align-items: flex-start; }
 
-  // 모든 SVG 데이터는 최신 index.html의 수치를 바탕으로 재구성되었습니다.
-  const partsData = {
-    brows: [
-      { id: 0, draw: (c, s=1) => <path d="M41,25 Q56,20 71,25 M129,25 Q144,20 159,25" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
-      { id: 1, draw: (c, s=1) => <path d="M41,30 L71,15 M129,15 L159,30" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
-      { id: 2, draw: (c, s=1) => <path d="M41,15 Q56,25 71,35 M129,35 Q144,25 159,15" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
-      { id: 3, draw: (c, s=1) => <path d="M41,25 Q56,55 76,35 M124,35 Q144,55 159,25" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
-      { id: 4, draw: (c, s=1) => <path d="M41,25 L76,22 M124,22 L159,25" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
-      { id: 5, draw: (c, s=1) => <path d="M46,30 Q61,10 76,25 M124,25 Q139,10 154,30" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
-      { id: 6, draw: (c, s=1) => <><path d="M41,30 L71,20 M129,20 L159,30" stroke="#2D1B15" strokeWidth={8*s} strokeLinecap="round"/><path d="M94,25 V35 M106,25 V35" stroke="#2D1B15" strokeWidth={3*s} strokeLinecap="round"/></> },
-      { id: 7, draw: (c, s=1) => <path d="M36,25 H76 M124,25 H164" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
-      { id: 8, draw: (c, s=1) => <path d="M41,20 Q56,40 71,20 M129,20 Q144,40 159,20" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> }
-    ],
-    eyes: [
-      { id: 0, draw: (c, s=1) => <><circle cx="65" cy="65" r={8*s} fill={c} /><circle cx="135" cy="65" r={8*s} fill={c} /></> },
-      { id: 1, draw: (c, s=1) => <path d="M45,70 Q65,45 85,70 M115,70 Q135,45 155,70" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
-      { id: 2, draw: (c, s=1) => <path d="M40,70 L75,60 M125,60 L160,70" stroke={c} strokeWidth={8*s} strokeLinecap="round" /> },
-      { id: 3, draw: (c, s=1) => <><rect x={42.5} y={55} width={45*s} height={25*s} rx={5*s} fill="#333" /><rect x={112.5} y={55} width={45*s} height={25*s} rx={5*s} fill="#333" /><path d="M87.5,69 H112.5" stroke="#333" strokeWidth={4*s} /></> },
-      { id: 4, draw: (c, s=1) => (
-        <g transform={`scale(${s}) translate(${(1-s)*100}, ${(1-s)*80}) translate(0, 10)`}>
-          <path d="M65,75 C40,65 40,40 65,52 C90,40 90,65 65,75 Z" fill="#ff7676" stroke="#2D1B15" strokeWidth="4" strokeLinejoin="round" />
-          <path d="M135,75 C110,65 110,40 135,52 C160,40 160,65 135,75 Z" fill="#ff7676" stroke="#2D1B15" strokeWidth="4" strokeLinejoin="round" />
-        </g>
-      )},
-      { id: 5, draw: (c, s=1) => <><path d="M45,60 L75,75 L45,90" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M155,60 L125,75 L155,90" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" strokeLinejoin="round"/></> },
-      { id: 6, draw: (c, s=1) => <><circle cx="65" cy="65" r={8*s} fill={c} /><circle cx="135" cy="65" r={8*s} fill={c} /><path d="M65,85 V140 M135,85 V140" stroke="#93c5fd" strokeWidth={12*s} strokeLinecap="round" opacity="0.6"/></> },
-      { id: 7, draw: (c, s=1) => <><path d="M45,65 L85,65" stroke={c} strokeWidth={8*s} strokeLinecap="round" /><circle cx="65" cy={78} r={10*s} fill={c} /><path d="M115,65 L155,65" stroke={c} strokeWidth={8*s} strokeLinecap="round" /><circle cx="135" cy={78} r={10*s} fill={c} /></> },
-      { id: 8, draw: (c, s=1) => <><circle cx="65" cy="65" r={20*s} fill="white" stroke={c} strokeWidth={3*s} /><circle cx="65" cy="65" r={8*s} fill={c} /><circle cx="135" cy="65" r={20*s} fill="white" stroke={c} strokeWidth={3*s} /><circle cx="135" cy="65" r={8*s} fill={c} /></> },
-      { id: 9, draw: (c, s=1) => <path d="M50,65 Q65,85 80,65 M120,65 Q135,85 150,65" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
-      { id: 10, draw: (c, s=1) => <><circle cx="65" cy="65" r={16*s} fill={c} /><circle cx="60" cy="60" r={6*s} fill="white" /><circle cx="135" cy="65" r={16*s} fill={c} /><circle cx="130" cy="60" r={6*s} fill="white" /></> },
-      { id: 11, draw: (c, s=1) => <><circle cx="65" cy="65" r={20*s} fill="white" stroke={c} strokeWidth={2*s} /><circle cx={78} cy={65} r={8*s} fill={c} /><circle cx="135" cy="65" r={20*s} fill="white" stroke={c} strokeWidth={2*s} /><circle cx={122} cy={65} r={8*s} fill={c} /></> }
-    ],
-    mouth: [
-      { id: 0, draw: (c, s=1) => <path d="M60,120 Q100,160 140,120" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
-      { id: 1, draw: (c, s=1) => <path d="M70,135 Q100,115 130,135" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
-      { id: 2, draw: (c, s=1) => <circle cx="100" cy="130" r={18*s} fill="#ffb7b7" stroke={c} strokeWidth={6.5*s} /> },
-      { id: 3, draw: (c, s=1) => <path d="M75,135 H125" stroke={c} strokeWidth={8*s} strokeLinecap="round" /> },
-      { id: 4, draw: (c, s=1) => <path d="M80,130 Q110,150 140,120" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
-      { id: 5, draw: (c, s=1) => <path d="M72.5,140 H127.5 Q127.5,105 100,105 Q72.5,105 72.5,140 Z" fill="#ffb7b7" stroke={c} strokeWidth={6.5*s} strokeLinejoin="round" /> },
-      { id: 6, draw: (c, s=1) => <path d="M72.5,115 H127.5 Q127.5,150 100,150 Q72.5,150 72.5,115 Z" fill="#ffb7b7" stroke={c} strokeWidth={6.5*s} strokeLinejoin="round" /> },
-      { id: 7, draw: (c, s=1) => <path d="M62.5,140 L75,125 L87.5,140 L100,125 L112.5,140 L125,125 L137.5,140" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" strokeLinejoin="round" /> },
-      { id: 8, draw: (c, s=1) => <path d="M95,115 C107,115 107,127.5 96,127.5 C107,127.5 107,140 95,140" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" /> }
-    ],
-    nose: [
-      { id: 0, draw: (c, s=1) => <circle cx="100" cy="85" r={3*s} fill="#2D1B15" /> },
-      { id: 1, draw: (c, s=1) => <path d="M95,90 Q100,85 105,90" stroke="#2D1B15" strokeWidth={4*s} fill="none" strokeLinecap="round" /> },
-      { id: 2, draw: (c, s=1) => <><circle cx="50" cy="100" r={15*s} fill="#fca5a5" opacity="0.4" /><circle cx="150" cy="100" r={15*s} fill="#fca5a5" opacity="0.4" /></> },
-      { id: 3, draw: (c, s=1) => <path d="M100,75 Q110,85 100,95" stroke="#2D1B15" strokeWidth={6*s} fill="none" strokeLinecap="round" /> },
-      { id: 4, draw: (c, s=1) => (
-        <g transform="translate(160, 5) scale(1)">
-            <path d="M0,-10 L2,-2 L10,0 L2,2 L0,10 L-2,2 L-10,0 L-2,-2 Z" transform="scale(1.7)" fill="#FBBF24" />
-            <path d="M-25,20 L-23,24 L-19,25 L-23,26 L-25,30 L-27,26 L-31,25 L-27,24 Z" transform="translate(-25, 25) scale(1.7) translate(25, -25)" fill="#FBBF24" />
-            <path d="M20,40 L21,43 L24,44 L21,45 L20,48 L19,45 L16,44 L19,43 Z" transform="translate(20, 44) scale(1.7) translate(-20, -44)" fill="#FBBF24" />
-        </g>
-      )},
-      { id: 5, draw: (c, s=1) => (
-        <g transform={`scale(${s}) translate(${(1-s)*100}, ${(1-s)*80}) translate(145, -20) rotate(-10)`}>
-          <path d="M0,15 L15,15 L0,30 L15,30" stroke="#3b82f6" strokeWidth="9" fill="none" strokeLinecap="round" />
-          <path d="M25,0 L35,0 L25,10 L35,10" stroke="#60a5fa" strokeWidth={7} fill="none" strokeLinecap="round" />
-        </g>
-      )},
-      { id: 6, isBack: true, draw: (c, s=1) => (
-        <g transform={`scale(${s}) translate(${(1-s)*100}, ${(1-s)*80})`}>
-            <g transform="translate(75, 20) rotate(-28, 0, 0) scale(1.05, 0.7)">
-                <path d="M-40,30 L0,-100 L40,30 Z" fill="#a855f7" stroke="#7e22ce" strokeWidth={2} />
-                <path d="M-30,5 H30 M-20,-35 H20 M-10,-70 H10" stroke="white" strokeWidth={5} strokeLinecap="round" />
-            </g>
-            <circle cx="20" cy="-25" r="4" fill="#ef4444" /><rect x="170" y="-10" width="5" height="5" fill="#3b82f6" />
-            <circle cx="10" cy="140" r="5" fill="#22c55e" /><rect x="185" y="150" width="6" height="6" fill="#eab308" transform="rotate(45, 189, 154)" />
-            <rect x="95" y="165" width="5" height="5" fill="#818cf8" /><circle cx="50" cy="160" r="3" fill="#f472b6" />
-            <rect x="150" y="40" width="4" height="4" fill="#ef4444" /><circle cx="160" cy="130" r="3" fill="#3b82f6" />
-        </g>
-      )},
-      { id: 7, draw: (c, s=1) => (
-        <g transform={`scale(${s}) translate(${(1-s)*100}, ${(1-s)*80}) translate(145, -20) scale(0.8)`}>
-          <path d="M-12,-15 Q0,0 12,-15" fill="none" stroke="#ef4444" strokeWidth={7} strokeLinecap="round" />
-          <path d="M-25,-2 Q-10,10 -25,22" fill="none" stroke="#ef4444" strokeWidth={7} strokeLinecap="round" />
-          <path d="M-12,35 Q0,20 12,35" fill="none" stroke="#ef4444" strokeWidth={7} strokeLinecap="round" />
-          <path d="M25,-2 Q10,10 25,22" fill="none" stroke="#ef4444" strokeWidth={7} strokeLinecap="round" />
-        </g>
-      )},
-      { id: 8, draw: (c, s=1) => (
-        <g transform={`scale(${s}) translate(${(1-s)*100}, ${(1-s)*80}) translate(145, -20) scale(0.7)`}>
-          <path d="M-10,-15 C-25,0 -25,20 -10,20 C5,20 5,0 -10,-15 Z" fill="#60a5fa" stroke="white" strokeWidth={0.5} transform="rotate(-15)"/>
-          <path d="M-10,-15 C-25,0 -25,20 -10,20 C5,20 5,0 -10,-15 Z" fill="#93c5fd" stroke="white" strokeWidth={0.5} transform="rotate(5) translate(40, 15)"/>
-          <path d="M-10,-15 C-25,0 -25,20 -10,20 C5,20 5,0 -10,-15 Z" fill="#bfdbfe" stroke="white" strokeWidth={0.5} transform="rotate(-30) translate(-10, 45)"/>
-        </g>
-      )},
-    ]
-  };
+  /* 왼쪽: 얼굴+입력+버튼 */
+  .left { flex: none; display: flex; flex-direction: column; align-items: center; }
+  .capture-wrap { display: flex; flex-direction: column; align-items: center; background: white; border-radius: 2rem; padding: 12px; }
+  .face-box { width: 260px; height: 380px; display: flex; align-items: center; justify-content: center; background: #eff6ff; border-radius: 2rem; border: 4px dashed #bfdbfe; position: relative; overflow: hidden; }
+  .face-box svg { width: 240px; height: 370px; overflow: visible; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15)); }
+  #emotion-input { margin-top: 16px; width: 100%; padding: 12px 16px; border-radius: 12px; border: 4px solid #fef08a; background: #fefce8; color: #713f12; font-family: 'Nanum Gothic', sans-serif; font-size: 17px; font-weight: 700; text-align: center; outline: none; }
+  #emotion-input:focus { border-color: #facc15; }
+  #emotion-input::placeholder { color: #fde68a; }
+  .btn-row { margin-top: 12px; display: flex; gap: 8px; width: 250px; }
+  .btn { flex: 1; padding: 12px; border: none; border-radius: 12px; font-family: 'Nanum Gothic', sans-serif; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
+  .btn-reset { background: #f3f4f6; color: #374151; }
+  .btn-reset:hover { background: #e5e7eb; }
+  .btn-save { background: #22c55e; color: white; box-shadow: 0 4px 12px rgba(34,197,94,0.3); }
+  .btn-save:hover { background: #16a34a; }
+  .btn-save:disabled { background: #86efac; cursor: not-allowed; }
+  .save-spinner { width: 18px; height: 18px; border: 3px solid white; border-top: 3px solid transparent; border-radius: 50%; animation: spin 0.6s linear infinite; }
 
-  const tabs = [
-    { id: 'brows', label: '눈썹', icon: <Sparkles size={20} /> },
-    { id: 'eyes', label: '눈', icon: <Eye size={20} /> },
-    { id: 'mouth', label: '입', icon: <Smile size={20} /> },
-    { id: 'nose', label: '코/장식', icon: <Ghost size={20} /> },
-  ];
+  /* 오른쪽: 탭+선택 패널 */
+  .right { flex: 1; display: flex; flex-direction: column; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+  .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 12px; font-family: 'Nanum Gothic', sans-serif; font-size: 16px; font-weight: 900; cursor: pointer; transition: all 0.2s; border-bottom: 4px solid transparent; }
+  .tab-btn.active { background: #facc15; color: white; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-bottom: 4px solid #ca8a04; }
+  .tab-btn:not(.active) { background: #fef9c3; color: #713f12; }
+  .tab-btn:not(.active):hover { background: #fef08a; }
 
-  const resetFace = () => setSelectedParts({ brows: -1, eyes: -1, mouth: -1, nose: -1 });
+  .panel { background: #fff7ed; padding: 12px; border-radius: 1.5rem; border: 4px solid #fed7aa; box-shadow: inset 0 2px 8px rgba(0,0,0,0.05); overflow-y: auto; max-height: 500px; cursor: grab; }
+  .panel:active { cursor: grabbing; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .part-btn { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: white; border-radius: 12px; border: 4px solid transparent; cursor: pointer; transition: all 0.2s; }
+  .part-btn:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-color: #fef9c3; }
+  .part-btn.selected { border-color: #eab308; background: #fefce8; transform: scale(1.05); }
+  .part-btn svg { width: 100%; height: 100%; padding: 4px; overflow: visible; }
 
-  const saveImage = async () => {
-    if (!libLoaded || !window.html2canvas) return;
-    if (captureRef.current) {
-      const canvas = await window.html2canvas(captureRef.current, { backgroundColor: null, scale: 2 });
-      const link = document.createElement('a');
-      link.download = '나만의_표정.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    }
-  };
+  footer { margin-top: 24px; color: rgba(113,63,18,0.3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
 
-  const activeNose = selectedParts.nose !== -1 ? partsData.nose[selectedParts.nose] : null;
+<!-- 로딩 스피너 -->
+<div id="spinner">
+  <div class="emoji">🎨</div>
+  <div class="ring"></div>
+  <p>표정을 준비하고 있어요!</p>
+</div>
 
-  return (
-    <div className="min-h-screen bg-pink-50 p-2 md:p-4 flex flex-col items-center justify-center font-['Nanum_Gothic']">
-      <div className="max-w-5xl w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-[10px] border-yellow-300">
-        <header className="bg-yellow-400 p-4 text-center">
-          <h1 className="text-[43px] font-black text-white drop-shadow-md">감정을 표정으로 표현해요</h1>
-        </header>
-        
-        {/* 핵심 수정: md:flex-row를 사용하여 패드 가로 모드부터 좌우 배치 적용 */}
-        <div className="flex flex-col md:flex-row p-4 gap-6 items-start justify-center">
-          <div className="flex-none flex flex-col items-center">
-            <div id="save-wrapper">
-                <div ref={captureRef} className="w-[330px] h-[395px] flex flex-col items-center justify-center bg-blue-50 rounded-[2rem] border-4 border-dashed border-blue-200 relative overflow-hidden">
-                <div className="relative w-full h-full flex items-center justify-center">
-                    {/* viewBox를 -50으로 설정하여 상단 여백 축소 적용 */}
-                    <svg viewBox="5 -50 190 225" className="w-full h-full drop-shadow-xl overflow-visible">
-                    {activeNose?.isBack && activeNose.draw("#8D6E63", 1)}
-                    <circle cx="100" cy="80" r={85} fill="#FFDBAC" stroke="#D97706" strokeWidth="3" />
-                    <g className="transition-all duration-300">
-                        {selectedParts.brows !== -1 && partsData.brows[selectedParts.brows].draw("#2D1B15", 1)}
-                        {selectedParts.eyes !== -1 && partsData.eyes[selectedParts.eyes].draw("#2D1B15", 1)}
-                        {selectedParts.mouth !== -1 && partsData.mouth[selectedParts.mouth].draw("#2D1B15", 1)}
-                        {activeNose && !activeNose.isBack && activeNose.draw("#8D6E63", 1)}
-                    </g>
-                    </svg>
-                </div>
-                </div>
-                <div className="w-[330px] mt-[15px]">
-                    <input type="text" id="emotion-input" placeholder="내가 표현한 감정을 적어주세요." 
-                        className="w-full py-3 px-4 rounded-2xl border-4 border-yellow-200 focus:border-yellow-400 outline-none text-center font-bold text-gray-700 placeholder-gray-400 transition-all text-lg bg-white shadow-none" />
-                </div>
-            </div>
-            
-            <div className="mt-[15px] flex gap-3 w-[330px]">
-              <button onClick={resetFace} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all text-lg flex items-center justify-center gap-2 h-[56px]">
-                <RotateCcw size={20} /> 처음부터
-              </button>
-              <button onClick={saveImage} className="flex-1 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all shadow-lg text-lg flex items-center justify-center gap-2 h-[56px]">
-                <Download size={20} /> 저장하기
-              </button>
-            </div>
-          </div>
-
-          <div className="flex-1 flex flex-col min-w-[350px]" style={{ height: '563px' }}>
-            <div className="flex gap-1 mb-2">
-              {tabs.map(tab => (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 py-2.5 rounded-xl font-black transition-all text-lg ${activeTab === tab.id ? 'bg-yellow-400 text-white shadow-md border-b-4 border-yellow-600' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-b-4 border-transparent'}`}>
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-[5px] bg-orange-50 p-2 rounded-[1.5rem] border-4 border-orange-100 overflow-y-auto shadow-inner custom-scrollbar justify-items-center content-start">
-              {(activeTab === 'nose' ? partsData[activeTab].slice(0, 9) : partsData[activeTab]).map((item, index) => (
-                <button key={index} onClick={() => setSelectedParts(p => ({ ...p, [activeTab]: p[activeTab] === index ? -1 : index }))} className={`w-[160px] h-[160px] p-[10px] flex items-center justify-center bg-white rounded-xl border-[4px] transition-all hover:shadow-lg ${selectedParts[activeTab] === index ? 'border-yellow-500 bg-yellow-50 scale-105' : 'border-transparent hover:border-yellow-100'}`}>
-                  <svg viewBox="5 -15 190 190" className="w-full h-full overflow-visible">
-                    {item.isBack && item.draw && item.draw("#2D1B15", 1)}
-                    <circle cx="100" cy="80" r={85} fill="#FFDBAC" stroke="#D97706" strokeWidth={3} />
-                    {!item.isBack && item.draw && item.draw("#2D1B15", 1)}
-                  </svg>
-                </button>
-              ))}
-            </div>
-          </div>
+<!-- 앱 본체 -->
+<div class="card">
+  <header><h1>감정을 표정으로 표현해요</h1></header>
+  <div class="body">
+    <!-- 왼쪽 -->
+    <div class="left">
+      <div class="capture-wrap" id="capture-area">
+        <div class="face-box">
+          <svg id="face-svg" viewBox="5 -65 190 280">
+            <circle cx="100" cy="80" r="95" fill="#FFDBAC" stroke="#D97706" stroke-width="3"/>
+            <g id="face-parts"></g>
+          </svg>
         </div>
+        <input type="text" id="emotion-input" placeholder="내 감정을 써봐요 ✏️" />
       </div>
-      <footer className="mt-8 text-yellow-900/40 font-bold uppercase tracking-widest text-sm text-center">Emotion Maker for Kids • 2024</footer>
-      <style dangerouslySetInnerHTML={{ __html: `@import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap'); .custom-scrollbar::-webkit-scrollbar { width: 6px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #fbbf24; border-radius: 10px; }`}} />
+      <div class="btn-row">
+        <button class="btn btn-reset" onclick="resetFace()">↺ 처음부터</button>
+        <button class="btn btn-save" id="save-btn" onclick="saveImage()">↓ 저장하기</button>
+      </div>
     </div>
-  );
+    <!-- 오른쪽 -->
+    <div class="right">
+      <div class="tabs" id="tabs"></div>
+      <div class="panel" id="panel">
+        <div class="grid" id="grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<footer>Emotion Maker for Kids • 2024</footer>
+
+<script>
+// ── SVG 헬퍼 ──────────────────────────────────────────────
+function svgEl(tag, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+function g(attrs, ...children) {
+  const el = svgEl('g', attrs || {});
+  children.forEach(c => c && el.appendChild(c));
+  return el;
+}
+function path(d, attrs) { return svgEl('path', { d, ...attrs }); }
+function circle(cx, cy, r, attrs) { return svgEl('circle', { cx, cy, r, ...attrs }); }
+function rect(x, y, w, h, attrs) { return svgEl('rect', { x, y, width: w, height: h, ...attrs }); }
+function line(x1, y1, x2, y2, attrs) { return svgEl('line', { x1, y1, x2, y2, ...attrs }); }
+
+// ── 파츠 데이터 ──────────────────────────────────────────
+const partsData = {
+  brows: [
+    { draw: (c,s=1) => g({}, path(`M40,28 Q56,20 72,26 M128,26 Q144,20 160,28`, {stroke:c,'stroke-width':6*s,fill:'none','stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M40,25 L72,13 M128,13 L160,25`, {stroke:c,'stroke-width':7*s,fill:'none','stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M40,16 L66,26 M134,26 L160,16`, {stroke:c,'stroke-width':8*s,fill:'none','stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M40,22 Q56,36 72,28 M128,28 Q144,36 160,22`, {stroke:c,'stroke-width':6*s,fill:'none','stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M40,26 L72,26 M128,26 L160,26`, {stroke:c,'stroke-width':8*s,fill:'none','stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M40,26 Q56,28 72,22 M128,18 Q144,26 160,26`, {stroke:c,'stroke-width':6*s,fill:'none','stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M40,26 L72,22 M128,22 L160,26`, {stroke:c,'stroke-width':7*s,'stroke-linecap':'round'}), path(`M95,18 V32 M105,18 V32`, {stroke:c,'stroke-width':3*s,'stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M36,26 H74 M126,26 H164`, {stroke:c,'stroke-width':11*s,'stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M40,30 Q56,16 72,24 M128,24 Q144,16 160,30`, {stroke:c,'stroke-width':10*s,fill:'none','stroke-linecap':'round'})) },
+  ],
+  eyes: [
+    { draw: (c,s=1) => g({}, circle(63,68,7.5*s,{fill:c}), circle(137,68,7.5*s,{fill:c})) },
+    { draw: (c,s=1) => g({}, path(`M46,70 Q63,50 80,70 M120,70 Q137,50 154,70`,{stroke:c,'stroke-width':9*s,fill:'none','stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M46,65 L76,65`,{stroke:c,'stroke-width':9*s,'stroke-linecap':'round'}), path(`M124,65 L154,65`,{stroke:c,'stroke-width':9*s,'stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M46,60 L80,72`,{stroke:c,'stroke-width':9*s,'stroke-linecap':'round'}), path(`M120,72 L154,60`,{stroke:c,'stroke-width':9*s,'stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({},
+        path(`M63,75 C63,75 40,63 40,51 C40,39 54,36 59,48 C64,36 78,39 78,51 C78,63 63,75 63,75 Z`,{fill:'#ff6b6b',stroke:'#2D1B15','stroke-width':3,'stroke-linejoin':'round'}),
+        path(`M137,75 C137,75 114,63 114,51 C114,39 128,36 133,48 C138,36 152,39 152,51 C152,63 137,75 137,75 Z`,{fill:'#ff6b6b',stroke:'#2D1B15','stroke-width':3,'stroke-linejoin':'round'})) },
+    { draw: (c,s=1) => g({},
+        path(`M46,58 L70,70 L46,82`,{stroke:c,'stroke-width':9*s,fill:'none','stroke-linecap':'round','stroke-linejoin':'round'}),
+        path(`M154,58 L130,70 L154,82`,{stroke:c,'stroke-width':9*s,fill:'none','stroke-linecap':'round','stroke-linejoin':'round'})) },
+    { draw: (c,s=1) => g({}, circle(63,63,8*s,{fill:c}), circle(137,63,8*s,{fill:c}),
+        path(`M63,74 V128 M137,74 V128`,{stroke:'#93c5fd','stroke-width':9*s,'stroke-linecap':'round',opacity:'0.75'})) },
+    { draw: (c,s=1) => g({},
+        path(`M46,60 L80,60`,{stroke:c,'stroke-width':9*s,'stroke-linecap':'round'}), circle(63,72,7.5*s,{fill:c}),
+        path(`M120,60 L154,60`,{stroke:c,'stroke-width':9*s,'stroke-linecap':'round'}), circle(137,72,7.5*s,{fill:c})) },
+    { draw: (c,s=1) => g({},
+        circle(63,65,20*s,{fill:'white',stroke:c,'stroke-width':3*s}), circle(63,65,10*s,{fill:c}),
+        circle(137,65,20*s,{fill:'white',stroke:c,'stroke-width':3*s}), circle(137,65,10*s,{fill:c})) },
+    { draw: (c,s=1) => g({}, path(`M46,60 Q63,78 80,60 M120,60 Q137,78 154,60`,{stroke:c,'stroke-width':9*s,fill:'none','stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, circle(63,65,15*s,{fill:c}), circle(57,59,6*s,{fill:'white'}), circle(137,65,15*s,{fill:c}), circle(131,59,6*s,{fill:'white'})) },
+    { draw: (c,s=1) => g({},
+        circle(63,65,17*s,{fill:'white',stroke:c,'stroke-width':2.5*s}), circle(72,65,9*s,{fill:c}),
+        circle(137,65,17*s,{fill:'white',stroke:c,'stroke-width':2.5*s}), circle(128,65,9*s,{fill:c})) },
+  ],
+  mouth: [
+    { draw: (c,s=1) => g({}, path(`M76,143 Q100,160 124,143`,{stroke:c,'stroke-width':8*s,fill:'none','stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M76,155 Q100,136 124,155`,{stroke:c,'stroke-width':8*s,fill:'none','stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, circle(100,148,13*s,{fill:'#ffb3ba',stroke:'#e8909a','stroke-width':2*s})) },
+    { draw: (c,s=1) => g({}, path(`M80,145 H120`,{stroke:c,'stroke-width':8*s,fill:'none','stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M84,150 Q96,144 108,148 Q116,146 118,142`,{stroke:c,'stroke-width':7*s,fill:'none','stroke-linecap':'round','stroke-linejoin':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M68,152 Q100,118 132,152 Z`,{fill:'#ffb3ba',stroke:c,'stroke-width':5*s,'stroke-linejoin':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M68,123 Q100,157 132,123 Z`,{fill:'#ffb3ba',stroke:c,'stroke-width':5*s,'stroke-linejoin':'round'})) },
+    { draw: (c,s=1) => g({}, path(`M76,150 Q86,138 96,150 Q106,162 116,150 Q126,138 136,150`,{stroke:c,'stroke-width':7*s,fill:'none','stroke-linecap':'round','stroke-linejoin':'round'})) },
+    { draw: (c,s=1) => g({},
+        path(`M100,137 Q116,144 100,150`,{stroke:c,'stroke-width':6*s,fill:'none','stroke-linecap':'round'}),
+        path(`M100,150 Q116,157 100,163`,{stroke:c,'stroke-width':6*s,fill:'none','stroke-linecap':'round'})) },
+  ],
+  nose: [
+    { draw: (c,s=1) => g({}, circle(100,100,5*s,{fill:'#5D4037'})) },
+    { draw: (c,s=1) => g({}, path(`M92,102 Q100,96 108,102`,{stroke:'#5D4037','stroke-width':4*s,fill:'none','stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({}, circle(54,108,16*s,{fill:'#fca5a5',opacity:'0.45'}), circle(146,108,16*s,{fill:'#fca5a5',opacity:'0.45'})) },
+    { draw: (c,s=1) => g({}, path(`M100,86 Q110,95 106,108`,{stroke:'#5D4037','stroke-width':5*s,fill:'none','stroke-linecap':'round'})) },
+    { draw: (c,s=1) => g({transform:'translate(130,-10)'},
+        path(`M0,-16 Q4,-4 16,0 Q4,4 0,16 Q-4,4 -16,0 Q-4,-4 0,-16 Z`,{fill:'#facc15',stroke:'#d97706','stroke-width':1}),
+        path(`M24,-28 Q27,-22 33,-20 Q27,-18 24,-12 Q21,-18 15,-20 Q21,-22 24,-28 Z`,{fill:'#fde68a',stroke:'#d97706','stroke-width':0.8}),
+        path(`M36,-8 Q38,-4 42,-3 Q38,-2 36,2 Q34,-2 30,-3 Q34,-4 36,-8 Z`,{fill:'#fef08a',stroke:'#d97706','stroke-width':0.6})) },
+    { draw: (c,s=1) => g({transform:'translate(130,-10) rotate(-10)'},
+        path(`M0,0 L14,0 L5,16 L16,16`,{stroke:'#3b82f6','stroke-width':8,fill:'none','stroke-linecap':'round','stroke-linejoin':'round'}),
+        path(`M22,-12 L32,-12 L25,-3 L34,-3`,{stroke:'#60a5fa','stroke-width':6,fill:'none','stroke-linecap':'round','stroke-linejoin':'round'})) },
+    { isBack: true, draw: (c,s=1) => g({},
+        g({transform:'translate(45,0) rotate(-35,0,0) scale(1.05,0.7)'},
+          path(`M-30,30 L0,-100 L30,30 Z`,{fill:'#a855f7',stroke:'#7e22ce','stroke-width':2}),
+          path(`M-20,5 H20 M-10,-35 H10 M-5,-70 H5`,{stroke:'white','stroke-width':5,'stroke-linecap':'round'})),
+        circle(20,-25,4,{fill:'#ef4444'}),
+        rect(170,-10,5,5,{fill:'#3b82f6'}),
+        circle(10,140,5,{fill:'#22c55e'}),
+        rect(185,150,6,6,{fill:'#eab308',transform:'rotate(45,189,154)'}),
+        rect(95,165,5,5,{fill:'#818cf8'}),
+        circle(50,160,3,{fill:'#f472b6'}),
+        rect(150,40,4,4,{fill:'#ef4444'}),
+        circle(160,130,3,{fill:'#3b82f6'})) },
+    { draw: (c,s=1) => g({transform:'translate(138,15)',stroke:'#ef4444','stroke-width':6,fill:'none','stroke-linecap':'round'},
+        path(`M-8,-20 Q0,-12 8,-20`,{}),
+        path(`M-8,20 Q0,12 8,20`,{}),
+        path(`M-20,-8 Q-12,0 -20,8`,{}),
+        path(`M20,-8 Q12,0 20,8`,{})) },
+    { draw: (c,s=1) => g({transform:'translate(130,-10) scale(0.75)'},
+        path(`M0,-18 C-18,0 -18,22 0,22 C18,22 18,0 0,-18 Z`,{fill:'#60a5fa',opacity:'0.9'}),
+        path(`M0,-18 C-18,0 -18,22 0,22 C18,22 18,0 0,-18 Z`,{fill:'#93c5fd',opacity:'0.85',transform:'translate(26,20)'}),
+        path(`M0,-18 C-18,0 -18,22 0,22 C18,22 18,0 0,-18 Z`,{fill:'#bfdbfe',opacity:'0.8',transform:'translate(-8,44)'})) },
+  ]
 };
 
-export default App;
+// ── 상태 ─────────────────────────────────────────────────
+const tabs = ['brows','eyes','mouth','nose'];
+const tabLabels = { brows:'눈썹', eyes:'눈', mouth:'입', nose:'코/장식' };
+const limitedTabs = ['brows','mouth','nose']; // 9개로 제한
+let selected = { brows:-1, eyes:-1, mouth:-1, nose:-1 };
+let activeTab = 'brows';
+let libLoaded = false;
+
+// ── 얼굴 렌더 ─────────────────────────────────────────────
+function renderFace() {
+  const faceParts = document.getElementById('face-parts');
+  const faceSvg = document.getElementById('face-svg');
+
+  // 기존 파츠 제거
+  while (faceParts.firstChild) faceParts.removeChild(faceParts.firstChild);
+
+  // isBack 코/장식 먼저 (얼굴 뒤)
+  const noseIdx = selected.nose;
+  const noseItem = noseIdx !== -1 ? partsData.nose[noseIdx] : null;
+  if (noseItem && noseItem.isBack) {
+    const backEl = noseItem.draw('#8D6E63', 1);
+    faceSvg.insertBefore(backEl, faceSvg.querySelector('circle'));
+  }
+
+  // 눈썹
+  if (selected.brows !== -1) faceParts.appendChild(partsData.brows[selected.brows].draw('#5D4037', 1));
+  // 눈
+  if (selected.eyes !== -1) faceParts.appendChild(partsData.eyes[selected.eyes].draw('#2D1B15', 1));
+  // 입
+  if (selected.mouth !== -1) faceParts.appendChild(partsData.mouth[selected.mouth].draw('#2D1B15', 1));
+  // 코/장식 (앞)
+  if (noseItem && !noseItem.isBack) faceParts.appendChild(noseItem.draw('#8D6E63', 1));
+}
+
+// ── 탭 렌더 ──────────────────────────────────────────────
+function renderTabs() {
+  const tabsEl = document.getElementById('tabs');
+  tabsEl.innerHTML = '';
+  tabs.forEach(tab => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (tab === activeTab ? ' active' : '');
+    btn.textContent = tabLabels[tab];
+    btn.onclick = () => { activeTab = tab; renderTabs(); renderGrid(); };
+    tabsEl.appendChild(btn);
+  });
+}
+
+// ── 그리드 렌더 ──────────────────────────────────────────
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  let items = partsData[activeTab];
+  if (limitedTabs.includes(activeTab)) items = items.slice(0, 9);
+
+  items.forEach((item, index) => {
+    const btn = document.createElement('button');
+    btn.className = 'part-btn' + (selected[activeTab] === index ? ' selected' : '');
+
+    // 미리보기 SVG
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '37 17 126 126');
+    svg.style.overflow = 'visible';
+
+    if (item.isBack) {
+      const bgG = g({transform:'translate(100,80) scale(0.5) translate(-100,-80)'}, item.draw('#5D4037', 1));
+      svg.appendChild(bgG);
+    }
+    svg.appendChild(circle(100, 80, 48, { fill: '#FFDBAC', stroke: '#D97706', 'stroke-width': 2 }));
+    if (!item.isBack) {
+      const fgG = g({transform:'translate(100,80) scale(0.5) translate(-100,-80)'}, item.draw('#5D4037', 1));
+      svg.appendChild(fgG);
+    }
+
+    btn.appendChild(svg);
+    btn.onclick = () => {
+      selected[activeTab] = selected[activeTab] === index ? -1 : index;
+      renderGrid();
+      renderFace();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+// ── 리셋 ─────────────────────────────────────────────────
+function resetFace() {
+  selected = { brows:-1, eyes:-1, mouth:-1, nose:-1 };
+  document.getElementById('emotion-input').value = '';
+  renderGrid();
+  renderFace();
+}
+
+// ── 저장 ─────────────────────────────────────────────────
+async function saveImage() {
+  if (!libLoaded || !window.html2canvas) return;
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="save-spinner"></div> 저장 중...';
+  try {
+    const area = document.getElementById('capture-area');
+    const canvas = await html2canvas(area, { backgroundColor: '#ffffff', scale: 2 });
+    const link = document.createElement('a');
+    link.download = '나만의_표정.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '↓ 저장하기';
+  }
+}
+
+// ── 드래그 스크롤 ─────────────────────────────────────────
+const panel = document.getElementById('panel');
+panel.addEventListener('mousedown', e => {
+  panel.style.cursor = 'grabbing';
+  const startY = e.pageY + panel.scrollTop;
+  const onMove = ev => { panel.scrollTop = startY - ev.pageY; };
+  const onUp = () => { panel.style.cursor = 'grab'; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+});
+
+// ── html2canvas 로드 ─────────────────────────────────────
+const script = document.createElement('script');
+script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+script.async = true;
+script.onload = () => { libLoaded = true; document.getElementById('spinner').style.display = 'none'; };
+script.onerror = () => { document.getElementById('spinner').style.display = 'none'; };
+document.body.appendChild(script);
+setTimeout(() => { document.getElementById('spinner').style.display = 'none'; }, 3000);
+
+// ── 초기화 ───────────────────────────────────────────────
+renderTabs();
+renderGrid();
+renderFace();
+</script>
+</body>
+</html>
