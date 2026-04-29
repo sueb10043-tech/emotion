@@ -1,246 +1,210 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>나만의 표정 만들기</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Nanum Gothic', sans-serif;
-            background-image: radial-gradient(#fde68a 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #fbbf24; border-radius: 10px; }
-        button:active { transform: scale(0.95); }
-        
-        .item-card {
-            width: 160px;
-            height: 160px;
-            padding: 10px;
-            box-sizing: border-box;
-            flex-shrink: 0;
-        }
+import React, { useState, useEffect, useRef } from 'react';
+import { RotateCcw, Download, Sparkles, Eye, Smile, Ghost } from 'lucide-react';
 
-        #save-wrapper {
-            background-color: white;
-            padding: 20px 20px 0 20px;
-            border-radius: 2.5rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: fit-content;
-            gap: 15px; 
-        }
-    </style>
-</head>
-<body class="min-h-screen bg-pink-50 p-2 md:p-4 flex items-center justify-center">
-    <div class="max-w-5xl w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-[10px] border-yellow-300">
-        
-        <header class="bg-yellow-400 p-4 text-center">
-            <h1 class="text-[43px] font-black text-white drop-shadow-md">감정을 표정으로 표현해요</h1>
+const App = () => {
+  const [selectedParts, setSelectedParts] = useState({
+    brows: -1,
+    eyes: -1,
+    mouth: -1,
+    nose: -1
+  });
+
+  const [activeTab, setActiveTab] = useState('brows');
+  const captureRef = useRef(null);
+  const [libLoaded, setLibLoaded] = useState(false);
+
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+    script.async = true;
+    script.onload = () => setLibLoaded(true);
+    document.body.appendChild(script);
+    return () => {
+      if (document.body.contains(script)) document.body.removeChild(script);
+    };
+  }, []);
+
+  // 모든 SVG 데이터는 최신 index.html의 수치를 바탕으로 재구성되었습니다.
+  const partsData = {
+    brows: [
+      { id: 0, draw: (c, s=1) => <path d="M41,25 Q56,20 71,25 M129,25 Q144,20 159,25" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
+      { id: 1, draw: (c, s=1) => <path d="M41,30 L71,15 M129,15 L159,30" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
+      { id: 2, draw: (c, s=1) => <path d="M41,15 Q56,25 71,35 M129,35 Q144,25 159,15" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
+      { id: 3, draw: (c, s=1) => <path d="M41,25 Q56,55 76,35 M124,35 Q144,55 159,25" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
+      { id: 4, draw: (c, s=1) => <path d="M41,25 L76,22 M124,22 L159,25" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
+      { id: 5, draw: (c, s=1) => <path d="M46,30 Q61,10 76,25 M124,25 Q139,10 154,30" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
+      { id: 6, draw: (c, s=1) => <><path d="M41,30 L71,20 M129,20 L159,30" stroke="#2D1B15" strokeWidth={8*s} strokeLinecap="round"/><path d="M94,25 V35 M106,25 V35" stroke="#2D1B15" strokeWidth={3*s} strokeLinecap="round"/></> },
+      { id: 7, draw: (c, s=1) => <path d="M36,25 H76 M124,25 H164" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
+      { id: 8, draw: (c, s=1) => <path d="M41,20 Q56,40 71,20 M129,20 Q144,40 159,20" stroke="#2D1B15" strokeWidth={8*s} fill="none" strokeLinecap="round" /> }
+    ],
+    eyes: [
+      { id: 0, draw: (c, s=1) => <><circle cx="65" cy="65" r={8*s} fill={c} /><circle cx="135" cy="65" r={8*s} fill={c} /></> },
+      { id: 1, draw: (c, s=1) => <path d="M45,70 Q65,45 85,70 M115,70 Q135,45 155,70" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
+      { id: 2, draw: (c, s=1) => <path d="M40,70 L75,60 M125,60 L160,70" stroke={c} strokeWidth={8*s} strokeLinecap="round" /> },
+      { id: 3, draw: (c, s=1) => <><rect x={42.5} y={55} width={45*s} height={25*s} rx={5*s} fill="#333" /><rect x={112.5} y={55} width={45*s} height={25*s} rx={5*s} fill="#333" /><path d="M87.5,69 H112.5" stroke="#333" strokeWidth={4*s} /></> },
+      { id: 4, draw: (c, s=1) => (
+        <g transform={`scale(${s}) translate(${(1-s)*100}, ${(1-s)*80}) translate(0, 10)`}>
+          <path d="M65,75 C40,65 40,40 65,52 C90,40 90,65 65,75 Z" fill="#ff7676" stroke="#2D1B15" strokeWidth="4" strokeLinejoin="round" />
+          <path d="M135,75 C110,65 110,40 135,52 C160,40 160,65 135,75 Z" fill="#ff7676" stroke="#2D1B15" strokeWidth="4" strokeLinejoin="round" />
+        </g>
+      )},
+      { id: 5, draw: (c, s=1) => <><path d="M45,60 L75,75 L45,90" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M155,60 L125,75 L155,90" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" strokeLinejoin="round"/></> },
+      { id: 6, draw: (c, s=1) => <><circle cx="65" cy="65" r={8*s} fill={c} /><circle cx="135" cy="65" r={8*s} fill={c} /><path d="M65,85 V140 M135,85 V140" stroke="#93c5fd" strokeWidth={12*s} strokeLinecap="round" opacity="0.6"/></> },
+      { id: 7, draw: (c, s=1) => <><path d="M45,65 L85,65" stroke={c} strokeWidth={8*s} strokeLinecap="round" /><circle cx="65" cy={78} r={10*s} fill={c} /><path d="M115,65 L155,65" stroke={c} strokeWidth={8*s} strokeLinecap="round" /><circle cx="135" cy={78} r={10*s} fill={c} /></> },
+      { id: 8, draw: (c, s=1) => <><circle cx="65" cy="65" r={20*s} fill="white" stroke={c} strokeWidth={3*s} /><circle cx="65" cy="65" r={8*s} fill={c} /><circle cx="135" cy="65" r={20*s} fill="white" stroke={c} strokeWidth={3*s} /><circle cx="135" cy="65" r={8*s} fill={c} /></> },
+      { id: 9, draw: (c, s=1) => <path d="M50,65 Q65,85 80,65 M120,65 Q135,85 150,65" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
+      { id: 10, draw: (c, s=1) => <><circle cx="65" cy="65" r={16*s} fill={c} /><circle cx="60" cy="60" r={6*s} fill="white" /><circle cx="135" cy="65" r={16*s} fill={c} /><circle cx="130" cy="60" r={6*s} fill="white" /></> },
+      { id: 11, draw: (c, s=1) => <><circle cx="65" cy="65" r={20*s} fill="white" stroke={c} strokeWidth={2*s} /><circle cx={78} cy={65} r={8*s} fill={c} /><circle cx="135" cy="65" r={20*s} fill="white" stroke={c} strokeWidth={2*s} /><circle cx={122} cy={65} r={8*s} fill={c} /></> }
+    ],
+    mouth: [
+      { id: 0, draw: (c, s=1) => <path d="M60,120 Q100,160 140,120" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
+      { id: 1, draw: (c, s=1) => <path d="M70,135 Q100,115 130,135" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
+      { id: 2, draw: (c, s=1) => <circle cx="100" cy="130" r={18*s} fill="#ffb7b7" stroke={c} strokeWidth={6.5*s} /> },
+      { id: 3, draw: (c, s=1) => <path d="M75,135 H125" stroke={c} strokeWidth={8*s} strokeLinecap="round" /> },
+      { id: 4, draw: (c, s=1) => <path d="M80,130 Q110,150 140,120" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" /> },
+      { id: 5, draw: (c, s=1) => <path d="M72.5,140 H127.5 Q127.5,105 100,105 Q72.5,105 72.5,140 Z" fill="#ffb7b7" stroke={c} strokeWidth={6.5*s} strokeLinejoin="round" /> },
+      { id: 6, draw: (c, s=1) => <path d="M72.5,115 H127.5 Q127.5,150 100,150 Q72.5,150 72.5,115 Z" fill="#ffb7b7" stroke={c} strokeWidth={6.5*s} strokeLinejoin="round" /> },
+      { id: 7, draw: (c, s=1) => <path d="M62.5,140 L75,125 L87.5,140 L100,125 L112.5,140 L125,125 L137.5,140" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" strokeLinejoin="round" /> },
+      { id: 8, draw: (c, s=1) => <path d="M95,115 C107,115 107,127.5 96,127.5 C107,127.5 107,140 95,140" stroke={c} strokeWidth={8*s} fill="none" strokeLinecap="round" /> }
+    ],
+    nose: [
+      { id: 0, draw: (c, s=1) => <circle cx="100" cy="85" r={3*s} fill="#2D1B15" /> },
+      { id: 1, draw: (c, s=1) => <path d="M95,90 Q100,85 105,90" stroke="#2D1B15" strokeWidth={4*s} fill="none" strokeLinecap="round" /> },
+      { id: 2, draw: (c, s=1) => <><circle cx="50" cy="100" r={15*s} fill="#fca5a5" opacity="0.4" /><circle cx="150" cy="100" r={15*s} fill="#fca5a5" opacity="0.4" /></> },
+      { id: 3, draw: (c, s=1) => <path d="M100,75 Q110,85 100,95" stroke="#2D1B15" strokeWidth={6*s} fill="none" strokeLinecap="round" /> },
+      { id: 4, draw: (c, s=1) => (
+        <g transform="translate(160, 5) scale(1)">
+            <path d="M0,-10 L2,-2 L10,0 L2,2 L0,10 L-2,2 L-10,0 L-2,-2 Z" transform="scale(1.7)" fill="#FBBF24" />
+            <path d="M-25,20 L-23,24 L-19,25 L-23,26 L-25,30 L-27,26 L-31,25 L-27,24 Z" transform="translate(-25, 25) scale(1.7) translate(25, -25)" fill="#FBBF24" />
+            <path d="M20,40 L21,43 L24,44 L21,45 L20,48 L19,45 L16,44 L19,43 Z" transform="translate(20, 44) scale(1.7) translate(-20, -44)" fill="#FBBF24" />
+        </g>
+      )},
+      { id: 5, draw: (c, s=1) => (
+        <g transform={`scale(${s}) translate(${(1-s)*100}, ${(1-s)*80}) translate(145, -20) rotate(-10)`}>
+          <path d="M0,15 L15,15 L0,30 L15,30" stroke="#3b82f6" strokeWidth="9" fill="none" strokeLinecap="round" />
+          <path d="M25,0 L35,0 L25,10 L35,10" stroke="#60a5fa" strokeWidth={7} fill="none" strokeLinecap="round" />
+        </g>
+      )},
+      { id: 6, isBack: true, draw: (c, s=1) => (
+        <g transform={`scale(${s}) translate(${(1-s)*100}, ${(1-s)*80})`}>
+            <g transform="translate(75, 20) rotate(-28, 0, 0) scale(1.05, 0.7)">
+                <path d="M-40,30 L0,-100 L40,30 Z" fill="#a855f7" stroke="#7e22ce" strokeWidth={2} />
+                <path d="M-30,5 H30 M-20,-35 H20 M-10,-70 H10" stroke="white" strokeWidth={5} strokeLinecap="round" />
+            </g>
+            <circle cx="20" cy="-25" r="4" fill="#ef4444" /><rect x="170" y="-10" width="5" height="5" fill="#3b82f6" />
+            <circle cx="10" cy="140" r="5" fill="#22c55e" /><rect x="185" y="150" width="6" height="6" fill="#eab308" transform="rotate(45, 189, 154)" />
+            <rect x="95" y="165" width="5" height="5" fill="#818cf8" /><circle cx="50" cy="160" r="3" fill="#f472b6" />
+            <rect x="150" y="40" width="4" height="4" fill="#ef4444" /><circle cx="160" cy="130" r="3" fill="#3b82f6" />
+        </g>
+      )},
+      { id: 7, draw: (c, s=1) => (
+        <g transform={`scale(${s}) translate(${(1-s)*100}, ${(1-s)*80}) translate(145, -20) scale(0.8)`}>
+          <path d="M-12,-15 Q0,0 12,-15" fill="none" stroke="#ef4444" strokeWidth={7} strokeLinecap="round" />
+          <path d="M-25,-2 Q-10,10 -25,22" fill="none" stroke="#ef4444" strokeWidth={7} strokeLinecap="round" />
+          <path d="M-12,35 Q0,20 12,35" fill="none" stroke="#ef4444" strokeWidth={7} strokeLinecap="round" />
+          <path d="M25,-2 Q10,10 25,22" fill="none" stroke="#ef4444" strokeWidth={7} strokeLinecap="round" />
+        </g>
+      )},
+      { id: 8, draw: (c, s=1) => (
+        <g transform={`scale(${s}) translate(${(1-s)*100}, ${(1-s)*80}) translate(145, -20) scale(0.7)`}>
+          <path d="M-10,-15 C-25,0 -25,20 -10,20 C5,20 5,0 -10,-15 Z" fill="#60a5fa" stroke="white" strokeWidth={0.5} transform="rotate(-15)"/>
+          <path d="M-10,-15 C-25,0 -25,20 -10,20 C5,20 5,0 -10,-15 Z" fill="#93c5fd" stroke="white" strokeWidth={0.5} transform="rotate(5) translate(40, 15)"/>
+          <path d="M-10,-15 C-25,0 -25,20 -10,20 C5,20 5,0 -10,-15 Z" fill="#bfdbfe" stroke="white" strokeWidth={0.5} transform="rotate(-30) translate(-10, 45)"/>
+        </g>
+      )},
+    ]
+  };
+
+  const tabs = [
+    { id: 'brows', label: '눈썹', icon: <Sparkles size={20} /> },
+    { id: 'eyes', label: '눈', icon: <Eye size={20} /> },
+    { id: 'mouth', label: '입', icon: <Smile size={20} /> },
+    { id: 'nose', label: '코/장식', icon: <Ghost size={20} /> },
+  ];
+
+  const resetFace = () => setSelectedParts({ brows: -1, eyes: -1, mouth: -1, nose: -1 });
+
+  const saveImage = async () => {
+    if (!libLoaded || !window.html2canvas) return;
+    if (captureRef.current) {
+      const canvas = await window.html2canvas(captureRef.current, { backgroundColor: null, scale: 2 });
+      const link = document.createElement('a');
+      link.download = '나만의_표정.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  };
+
+  const activeNose = selectedParts.nose !== -1 ? partsData.nose[selectedParts.nose] : null;
+
+  return (
+    <div className="min-h-screen bg-pink-50 p-2 md:p-4 flex flex-col items-center justify-center font-['Nanum_Gothic']">
+      <div className="max-w-5xl w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-[10px] border-yellow-300">
+        <header className="bg-yellow-400 p-4 text-center">
+          <h1 className="text-[43px] font-black text-white drop-shadow-md">감정을 표정으로 표현해요</h1>
         </header>
-
-        <div class="flex flex-col lg:flex-row p-4 gap-6 items-stretch justify-center">
-            <div id="left-column" class="flex-none flex flex-col items-center">
-                <div id="save-wrapper">
-                    <!-- 메인 카드 (330px x 395px 고정) -->
-                    <div id="capture-target" class="w-[330px] h-[395px] flex flex-col items-center justify-center bg-blue-50 rounded-[2rem] border-4 border-dashed border-blue-200 relative overflow-hidden">
-                        <div id="face-container" class="relative w-full h-full flex items-center justify-center">
-                            <!-- SVG 렌더링 영역 -->
-                        </div>
-                    </div>
-
-                    <div class="w-[330px]">
-                        <input type="text" id="emotion-input" placeholder="내가 표현한 감정을 적어주세요." 
-                            class="w-full py-3 px-4 rounded-2xl border-4 border-yellow-200 focus:border-yellow-400 outline-none text-center font-bold text-gray-700 placeholder-gray-400 transition-all text-lg bg-white shadow-none">
-                    </div>
-                </div>
-
-                <div class="mt-[15px] flex gap-3 w-[330px]">
-                    <button onclick="resetFace()" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all text-lg flex items-center justify-center gap-2 h-[56px]">
-                        처음부터
-                    </button>
-                    <button onclick="saveFaceImage()" class="flex-1 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all shadow-lg text-lg flex items-center justify-center gap-2 h-[56px]">
-                        저장하기
-                    </button>
-                </div>
-            </div>
-
-            <!-- 오른쪽 조작 영역 -->
-            <div class="flex-1 flex flex-col min-w-[350px]" style="height: 563px;"> 
-                <div class="flex gap-1 mb-2">
-                    <button onclick="setActiveTab('brows')" id="tab-brows" class="flex-1 py-2.5 rounded-xl font-black transition-all text-lg">눈썹</button>
-                    <button onclick="setActiveTab('eyes')" id="tab-eyes" class="flex-1 py-2.5 rounded-xl font-black transition-all text-lg">눈</button>
-                    <button onclick="setActiveTab('mouth')" id="tab-mouth" class="flex-1 py-2.5 rounded-xl font-black transition-all text-lg">입</button>
-                    <button onclick="setActiveTab('nose')" id="tab-nose" class="flex-1 py-2.5 rounded-xl font-black transition-all text-lg">코/장식</button>
-                </div>
-
-                <div id="items-grid" class="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-[5px] bg-orange-50 p-2 rounded-[1.5rem] border-4 border-orange-100 overflow-y-auto shadow-inner custom-scrollbar justify-items-center content-start">
-                    <!-- 아이템 리스트 -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let selectedParts = { brows: -1, eyes: -1, mouth: -1, nose: -1 };
-        let activeTab = 'brows';
-
-        const partsData = {
-            /* 눈썹: ID 순서 정리 및 8번(id 7) 정상화 */
-            brows: [
-                { id: 0, draw: (c, s=1) => `<path d="M41,25 Q56,20 71,25 M129,25 Q144,20 159,25" stroke="#2D1B15" stroke-width="${8*s}" fill="none" stroke-linecap="round" />` },
-                { id: 1, draw: (c, s=1) => `<path d="M41,30 L71,15 M129,15 L159,30" stroke="#2D1B15" stroke-width="${8*s}" fill="none" stroke-linecap="round" />` },
-                { id: 2, draw: (c, s=1) => `<path d="M41,15 Q56,25 71,35 M129,35 Q144,25 159,15" stroke="#2D1B15" stroke-width="${8*s}" fill="none" stroke-linecap="round" />` },
-                { id: 3, draw: (c, s=1) => `<path d="M41,25 Q56,55 76,35 M124,35 Q144,55 159,25" stroke="#2D1B15" stroke-width="${8*s}" fill="none" stroke-linecap="round" />` },
-                { id: 4, draw: (c, s=1) => `<path d="M41,25 L76,22 M124,22 L159,25" stroke="#2D1B15" stroke-width="${8*s}" fill="none" stroke-linecap="round" />` },
-                { id: 5, draw: (c, s=1) => `<path d="M46,30 Q61,10 76,25 M124,25 Q139,10 154,30" stroke="#2D1B15" stroke-width="${8*s}" fill="none" stroke-linecap="round" />` },
-                { id: 6, draw: (c, s=1) => `<path d="M41,30 L71,20 M129,20 L159,30" stroke="#2D1B15" stroke-width="${8*s}" stroke-linecap="round"/><path d="M94,25 V35 M106,25 V35" stroke="#2D1B15" stroke-width="${3*s}" stroke-linecap="round"/>` },
-                { id: 7, draw: (c, s=1) => `<path d="M36,25 H76 M124,25 H164" stroke="#2D1B15" stroke-width="${8*s}" fill="none" stroke-linecap="round" />` },
-                { id: 8, draw: (c, s=1) => `<path d="M41,20 Q56,40 71,20 M129,20 Q144,40 159,20" stroke="#2D1B15" stroke-width="${8*s}" fill="none" stroke-linecap="round" />` }
-            ],
-            eyes: [
-                { id: 0, draw: (c, s=1) => `<circle cx="65" cy="65" r="${8*s}" fill="${c}" /><circle cx="135" cy="65" r="${8*s}" fill="${c}" />` },
-                { id: 1, draw: (c, s=1) => `<path d="M45,70 Q65,45 85,70 M115,70 Q135,45 155,70" stroke="${c}" stroke-width="${8*s}" fill="none" stroke-linecap="round" />` },
-                { id: 2, draw: (c, s=1) => `<path d="M40,70 L75,60 M125,60 L160,70" stroke="${c}" stroke-width="${8*s}" stroke-linecap="round" />` },
-                { id: 3, draw: (c, s=1) => `<rect x="${42.5}" y="55" width="${45*s}" height="${25*s}" rx="${5*s}" fill="#333" /><rect x="${112.5}" y="55" width="${45*s}" height="${25*s}" rx="${5*s}" fill="#333" /><path d="M87.5,69 H112.5" stroke="#333" stroke-width="${4*s}" />` },
-                { id: 4, draw: (c, s=1) => `<g transform="scale(${s}) translate(${(1-s)*100}, ${(1-s)*80}) translate(0, 10)">
-                    <path d="M65,75 C40,65 40,40 65,52 C90,40 90,65 65,75 Z" fill="#ff7676" stroke="#2D1B15" stroke-width="4" stroke-linejoin="round" />
-                    <path d="M135,75 C110,65 110,40 135,52 C160,40 160,65 135,75 Z" fill="#ff7676" stroke="#2D1B15" stroke-width="4" stroke-linejoin="round" />
-                </g>` },
-                { id: 5, draw: (c, s=1) => `<path d="M45,60 L75,75 L45,90" stroke="${c}" stroke-width="${8*s}" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M155,60 L125,75 L155,90" stroke="${c}" stroke-width="${8*s}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` },
-                { id: 6, draw: (c, s=1) => `<circle cx="65" cy="65" r="${8*s}" fill="${c}" /><circle cx="135" cy="65" r="${8*s}" fill="${c}" /><path d="M65,85 V140 M135,85 V140" stroke="#93c5fd" stroke-width="${12*s}" stroke-linecap="round" opacity="0.6"/>` },
-                { id: 7, draw: (c, s=1) => `<path d="M45,65 L85,65" stroke="${c}" stroke-width="${8*s}" stroke-linecap="round" /><circle cx="65" cy="78" r="${10*s}" fill="${c}" /><path d="M115,65 L155,65" stroke="${c}" stroke-width="${8*s}" stroke-linecap="round" /><circle cx="135" cy="78" r="${10*s}" fill="${c}" />` },
-                { id: 8, draw: (c, s=1) => `<circle cx="65" cy="65" r="${20*s}" fill="white" stroke="${c}" stroke-width="${3*s}" /><circle cx="65" cy="65" r="${8*s}" fill="${c}" /><circle cx="135" cy="65" r="${20*s}" fill="white" stroke="${c}" stroke-width="${3*s}" /><circle cx="135" cy="65" r="${8*s}" fill="${c}" />` },
-                { id: 9, draw: (c, s=1) => `<path d="M50,65 Q65,85 80,65 M120,65 Q135,85 150,65" stroke="${c}" stroke-width="${8*s}" fill="none" stroke-linecap="round" />` },
-                { id: 10, draw: (c, s=1) => `<circle cx="65" cy="65" r="${16*s}" fill="${c}" /><circle cx="60" cy="60" r="${6*s}" fill="white" /><circle cx="135" cy="65" r="${16*s}" fill="${c}" /><circle cx="130" cy="60" r="${6*s}" fill="white" />` },
-                { id: 11, draw: (c, s=1) => `<circle cx="65" cy="65" r="${20*s}" fill="white" stroke="${c}" stroke-width="${2*s}" /><circle cx="78" cy="65" r="${8*s}" fill="${c}" /><circle cx="135" cy="65" r="${20*s}" fill="white" stroke="${c}" stroke-width="${2*s}" /><circle cx="122" cy="65" r="${8*s}" fill="${c}" />` }
-            ],
-            mouth: [
-                { id: 0, draw: (c, s=1) => `<path d="M60,120 Q100,160 140,120" stroke="${c}" stroke-width="${8*s}" fill="none" stroke-linecap="round" />` },
-                { id: 1, draw: (c, s=1) => `<path d="M70,135 Q100,115 130,135" stroke="${c}" stroke-width="${8*s}" fill="none" stroke-linecap="round" />` },
-                { id: 2, draw: (c, s=1) => `<circle cx="100" cy="130" r="${18*s}" fill="#ffb7b7" stroke="${c}" stroke-width="${6.5*s}" />` },
-                { id: 3, draw: (c, s=1) => `<path d="M75,135 H125" stroke="${c}" stroke-width="${8*s}" stroke-linecap="round" />` },
-                { id: 4, draw: (c, s=1) => `<path d="M80,130 Q110,150 140,120" stroke="${c}" stroke-width="${8*s}" fill="none" stroke-linecap="round" />` },
-                { id: 5, draw: (c, s=1) => `
-                    <path d="M72.5,140 H127.5 Q127.5,105 100,105 Q72.5,105 72.5,140 Z" fill="#ffb7b7" stroke="${c}" stroke-width="${6.5*s}" stroke-linejoin="round" />
-                ` },
-                { id: 6, draw: (c, s=1) => `<path d="M72.5,115 H127.5 Q127.5,150 100,150 Q72.5,150 72.5,115 Z" fill="#ffb7b7" stroke="${c}" stroke-width="${6.5*s}" stroke-linejoin="round" />` },
-                { id: 7, draw: (c, s=1) => `<path d="M62.5,140 L75,125 L87.5,140 L100,125 L112.5,140 L125,125 L137.5,140" stroke="${c}" stroke-width="${8*s}" fill="none" stroke-linecap="round" stroke-linejoin="round" />` },
-                { id: 8, draw: (c, s=1) => `<path d="M95,115 C107,115 107,127.5 96,127.5 C107,127.5 107,140 95,140" stroke="${c}" stroke-width="${8*s}" fill="none" stroke-linecap="round" />` }
-            ],
-            nose: [
-                /* 1번 코: 반지름 3단위, 위치 위로 10단위 상향(95->85) */
-                { id: 0, draw: (c, s=1) => `<circle cx="100" cy="85" r="${3*s}" fill="#2D1B15" />` },
-                /* 2번 코: 위치 위로 10단위 상향(100->90, 95->85) */
-                { id: 1, draw: (c, s=1) => `<path d="M95,90 Q100,85 105,90" stroke="#2D1B15" stroke-width="${4*s}" fill="none" stroke-linecap="round" />` },
-                { id: 2, draw: (c, s=1) => `<circle cx="50" cy="100" r="${15*s}" fill="#fca5a5" opacity="0.4" /><circle cx="150" cy="100" r="${15*s}" fill="#fca5a5" opacity="0.4" />` },
-                /* 4번 코: 위치 위로 10단위 상향(85~105 -> 75~95) */
-                { id: 3, draw: (c, s=1) => `<path d="M100,75 Q110,85 100,95" stroke="#2D1B15" stroke-width="${6*s}" fill="none" stroke-linecap="round" />` },
-                { id: 4, draw: (c, s=1) => `
-                    <g transform="translate(160, 5) scale(${s})">
-                        <path d="M0,-10 L2,-2 L10,0 L2,2 L0,10 L-2,2 L-10,0 L-2,-2 Z" transform="scale(1.7)" fill="#FBBF24" />
-                        <path d="M-25,20 L-23,24 L-19,25 L-23,26 L-25,30 L-27,26 L-31,25 L-27,24 Z" transform="translate(-25, 25) scale(1.7) translate(25, -25)" fill="#FBBF24" />
-                        <path d="M20,40 L21,43 L24,44 L21,45 L20,48 L19,45 L16,44 L19,43 Z" transform="translate(20, 44) scale(1.7) translate(-20, -44)" fill="#FBBF24" />
-                    </g>` },
-                { id: 5, draw: (c, s=1) => `<g transform="scale(${s}) translate(${(1-s)*100}, ${(1-s)*80}) translate(145, -20) rotate(-10)"><path d="M0,15 L15,15 L0,30 L15,30" stroke="#3b82f6" stroke-width="9" fill="none" stroke-linecap="round" /><path d="M25,0 L35,0 L25,10 L35,10" stroke="#60a5fa" stroke-width="7" fill="none" stroke-linecap="round" /></g>` },
-                { id: 6, isBack: true, draw: (c, s=1) => `
-                    <g transform="scale(${s}) translate(${(1-s)*100}, ${(1-s)*80})">
-                        <g transform="translate(75, 20) rotate(-28, 0, 0) scale(1.05, 0.7)">
-                            <path d="M-40,30 L0,-100 L40,30 Z" fill="#a855f7" stroke="#7e22ce" stroke-width="2" />
-                            <path d="M-30,5 H30 M-20,-35 H20 M-10,-70 H10" stroke="white" stroke-width="5" stroke-linecap="round" />
-                        </g>
-                        <circle cx="20" cy="-25" r="4" fill="#ef4444" /><rect x="170" y="-10" width="5" height="5" fill="#3b82f6" />
-                        <circle cx="10" cy="140" r="5" fill="#22c55e" /><rect x="185" y="150" width="6" height="6" fill="#eab308" transform="rotate(45, 189, 154)" />
-                        <rect x="95" y="165" width="5" height="5" fill="#818cf8" /><circle cx="50" cy="160" r="3" fill="#f472b6" />
-                        <rect x="150" y="40" width="4" height="4" fill="#ef4444" /><circle cx="160" cy="130" r="3" fill="#3b82f6" />
-                    </g>` },
-                { id: 7, draw: (c, s=1) => `<g transform="scale(${s}) translate(${(1-s)*100}, ${(1-s)*80}) translate(145, -20) scale(0.8)"><path d="M-12,-15 Q0,0 12,-15" fill="none" stroke="#ef4444" stroke-width="7" stroke-linecap="round" /><path d="M-25,-2 Q-10,10 -25,22" fill="none" stroke="#ef4444" stroke-width="7" stroke-linecap="round" /><path d="M-12,35 Q0,20 12,35" fill="none" stroke="#ef4444" stroke-width="7" stroke-linecap="round" /><path d="M25,-2 Q10,10 25,22" fill="none" stroke="#ef4444" stroke-width="7" stroke-linecap="round" /></g>` },
-                { id: 8, draw: (c, s=1) => `
-                    <g transform="scale(${s}) translate(${(1-s)*100}, ${(1-s)*80}) translate(145, -20) scale(0.7)">
-                        <path d="M-10,-15 C-25,0 -25,20 -10,20 C5,20 5,0 -10,-15 Z" fill="#60a5fa" stroke="white" stroke-width="0.5" transform="rotate(-15)"/>
-                        <path d="M-10,-15 C-25,0 -25,20 -10,20 C5,20 5,0 -10,-15 Z" fill="#93c5fd" stroke="white" stroke-width="0.5" transform="rotate(5) translate(40, 15)"/>
-                        <path d="M-10,-15 C-25,0 -25,20 -10,20 C5,20 5,0 -10,-15 Z" fill="#bfdbfe" stroke="white" stroke-width="0.5" transform="rotate(-30) translate(-10, 45)"/>
-                    </g>` }
-            ]
-        };
-
-        function renderFace() {
-            const container = document.getElementById('face-container');
-            const nosePart = selectedParts.nose !== -1 ? partsData.nose[selectedParts.nose] : null;
-            /* viewBox 상단 여백 10 축소 상태 유지 (-50) */
-            container.innerHTML = `
-                <svg id="face-svg" viewBox="5 -50 190 225" class="w-full h-full drop-shadow-xl overflow-visible">
-                    ${nosePart && nosePart.isBack ? nosePart.draw("#8D6E63", 1) : ''}
-                    <circle cx="100" cy="80" r="85" fill="#FFDBAC" stroke="#D97706" stroke-width="3" />
-                    <g class="transition-all duration-300">
-                        ${selectedParts.brows !== -1 ? partsData.brows[selectedParts.brows].draw("#2D1B15", 1) : ''}
-                        ${selectedParts.eyes !== -1 ? partsData.eyes[selectedParts.eyes].draw("#2D1B15", 1) : ''}
-                        ${selectedParts.mouth !== -1 ? partsData.mouth[selectedParts.mouth].draw("#2D1B15", 1) : ''}
-                        ${nosePart && !nosePart.isBack ? nosePart.draw("#8D6E63", 1) : ''}
+        
+        {/* 핵심 수정: md:flex-row를 사용하여 패드 가로 모드부터 좌우 배치 적용 */}
+        <div className="flex flex-col md:flex-row p-4 gap-6 items-start justify-center">
+          <div className="flex-none flex flex-col items-center">
+            <div id="save-wrapper">
+                <div ref={captureRef} className="w-[330px] h-[395px] flex flex-col items-center justify-center bg-blue-50 rounded-[2rem] border-4 border-dashed border-blue-200 relative overflow-hidden">
+                <div className="relative w-full h-full flex items-center justify-center">
+                    {/* viewBox를 -50으로 설정하여 상단 여백 축소 적용 */}
+                    <svg viewBox="5 -50 190 225" className="w-full h-full drop-shadow-xl overflow-visible">
+                    {activeNose?.isBack && activeNose.draw("#8D6E63", 1)}
+                    <circle cx="100" cy="80" r={85} fill="#FFDBAC" stroke="#D97706" strokeWidth="3" />
+                    <g className="transition-all duration-300">
+                        {selectedParts.brows !== -1 && partsData.brows[selectedParts.brows].draw("#2D1B15", 1)}
+                        {selectedParts.eyes !== -1 && partsData.eyes[selectedParts.eyes].draw("#2D1B15", 1)}
+                        {selectedParts.mouth !== -1 && partsData.mouth[selectedParts.mouth].draw("#2D1B15", 1)}
+                        {activeNose && !activeNose.isBack && activeNose.draw("#8D6E63", 1)}
                     </g>
-                </svg>`;
-        }
+                    </svg>
+                </div>
+                </div>
+                <div className="w-[330px] mt-[15px]">
+                    <input type="text" id="emotion-input" placeholder="내가 표현한 감정을 적어주세요." 
+                        className="w-full py-3 px-4 rounded-2xl border-4 border-yellow-200 focus:border-yellow-400 outline-none text-center font-bold text-gray-700 placeholder-gray-400 transition-all text-lg bg-white shadow-none" />
+                </div>
+            </div>
+            
+            <div className="mt-[15px] flex gap-3 w-[330px]">
+              <button onClick={resetFace} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all text-lg flex items-center justify-center gap-2 h-[56px]">
+                <RotateCcw size={20} /> 처음부터
+              </button>
+              <button onClick={saveImage} className="flex-1 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all shadow-lg text-lg flex items-center justify-center gap-2 h-[56px]">
+                <Download size={20} /> 저장하기
+              </button>
+            </div>
+          </div>
 
-        function renderGrid() {
-            const grid = document.getElementById('items-grid');
-            grid.innerHTML = '';
-            const list = activeTab === 'nose' ? partsData[activeTab].slice(0, 9) : partsData[activeTab];
+          <div className="flex-1 flex flex-col min-w-[350px]" style={{ height: '563px' }}>
+            <div className="flex gap-1 mb-2">
+              {tabs.map(tab => (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 py-2.5 rounded-xl font-black transition-all text-lg ${activeTab === tab.id ? 'bg-yellow-400 text-white shadow-md border-b-4 border-yellow-600' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-b-4 border-transparent'}`}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-[5px] bg-orange-50 p-2 rounded-[1.5rem] border-4 border-orange-100 overflow-y-auto shadow-inner custom-scrollbar justify-items-center content-start">
+              {(activeTab === 'nose' ? partsData[activeTab].slice(0, 9) : partsData[activeTab]).map((item, index) => (
+                <button key={index} onClick={() => setSelectedParts(p => ({ ...p, [activeTab]: p[activeTab] === index ? -1 : index }))} className={`w-[160px] h-[160px] p-[10px] flex items-center justify-center bg-white rounded-xl border-[4px] transition-all hover:shadow-lg ${selectedParts[activeTab] === index ? 'border-yellow-500 bg-yellow-50 scale-105' : 'border-transparent hover:border-yellow-100'}`}>
+                  <svg viewBox="5 -15 190 190" className="w-full h-full overflow-visible">
+                    {item.isBack && item.draw && item.draw("#2D1B15", 1)}
+                    <circle cx="100" cy="80" r={85} fill="#FFDBAC" stroke="#D97706" strokeWidth={3} />
+                    {!item.isBack && item.draw && item.draw("#2D1B15", 1)}
+                  </svg>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer className="mt-8 text-yellow-900/40 font-bold uppercase tracking-widest text-sm text-center">Emotion Maker for Kids • 2024</footer>
+      <style dangerouslySetInnerHTML={{ __html: `@import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap'); .custom-scrollbar::-webkit-scrollbar { width: 6px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #fbbf24; border-radius: 10px; }`}} />
+    </div>
+  );
+};
 
-            list.forEach((item, index) => {
-                const btn = document.createElement('button');
-                btn.className = `item-card flex items-center justify-center bg-white rounded-xl border-[4px] transition-all hover:shadow-lg ${selectedParts[activeTab] === index ? 'border-yellow-500 bg-yellow-50 scale-105' : 'border-transparent hover:border-yellow-100'}`;
-                btn.onclick = () => {
-                    selectedParts[activeTab] = (selectedParts[activeTab] === index) ? -1 : index;
-                    renderFace();
-                    renderGrid();
-                };
-                btn.innerHTML = `
-                    <svg viewBox="5 -15 190 190" class="w-full h-full overflow-visible">
-                        ${item.isBack ? item.draw("#2D1B15", 1) : ''}
-                        <circle cx="100" cy="80" r="85" fill="#FFDBAC" stroke="#D97706" stroke-width="3" />
-                        ${!item.isBack ? item.draw("#2D1B15", 1) : ''}
-                    </svg>`;
-                grid.appendChild(btn);
-            });
-        }
-
-        function setActiveTab(tab) {
-            activeTab = tab;
-            ['brows', 'eyes', 'mouth', 'nose'].forEach(t => {
-                const el = document.getElementById('tab-' + t);
-                el.className = (t === tab) 
-                    ? 'flex-1 py-2.5 rounded-xl font-black transition-all text-lg bg-yellow-400 text-white shadow-md border-b-4 border-yellow-600'
-                    : 'flex-1 py-2.5 rounded-xl font-black transition-all text-lg bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-b-4 border-transparent';
-            });
-            renderGrid();
-        }
-
-        function resetFace() {
-            selectedParts = { brows: -1, eyes: -1, mouth: -1, nose: -1 };
-            document.getElementById('emotion-input').value = '';
-            renderFace();
-            renderGrid();
-        }
-
-        function saveFaceImage() {
-            const wrapper = document.getElementById('save-wrapper');
-            const emotionName = document.getElementById('emotion-input').value.trim() || '나만의_표정';
-            document.activeElement.blur();
-            html2canvas(wrapper, { backgroundColor: null, scale: 2, logging: false, useCORS: true }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `${emotionName}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            });
-        }
-
-        setActiveTab('brows');
-        renderFace();
-    </script>
-</body>
-</html>
+export default App;
