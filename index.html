@@ -7,58 +7,87 @@
 <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet" />
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Nanum Gothic', sans-serif; background: #fdf2f8; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body { font-family: 'Nanum Gothic', sans-serif; background: #fdf2f8; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
   /* 로딩 스피너 */
-  #spinner { position: fixed; inset: 0; background: #fffbeb; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 20px; }
-  #spinner .emoji { font-size: 56px; animation: bounce 0.8s ease-in-out infinite alternate; }
-  #spinner .ring { width: 52px; height: 52px; border: 6px solid #fde68a; border-top: 6px solid #f59e0b; border-radius: 50%; animation: spin 0.8s linear infinite; }
-  #spinner p { font-size: 20px; font-weight: 800; color: #92400e; }
+  #spinner { position: fixed; inset: 0; background: #fffbeb; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
+  #spinner .emoji { font-size: 44px; animation: bounce 0.8s ease-in-out infinite alternate; }
+  #spinner .ring { width: 44px; height: 44px; border: 5px solid #fde68a; border-top: 5px solid #f59e0b; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  #spinner p { font-size: 17px; font-weight: 800; color: #92400e; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-12px); } }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
 
-  /* 카드 */
-  .card { max-width: 900px; width: 100%; background: white; border-radius: 2.5rem; box-shadow: 0 25px 50px rgba(0,0,0,0.15); overflow: hidden; border: 10px solid #fde047; }
-  header { background: #facc15; padding: 16px; text-align: center; }
-  header h1 { font-size: 36px; font-weight: 900; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+  /* 카드: 화면 전체를 꽉 채우되 19.5:11 비율 유지 */
+  .card {
+    width: min(100vw, calc(100vh * (19.5/11)));
+    height: min(100vh, calc(100vw * (11/19.5)));
+    background: white;
+    border-radius: 1.5rem;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    overflow: hidden;
+    border: 7px solid #fde047;
+    display: flex;
+    flex-direction: column;
+  }
+  header { background: #facc15; padding: 6px 12px; text-align: center; flex-shrink: 0; }
+  header h1 { font-size: clamp(14px, 2.2vh, 22px); font-weight: 900; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
   /* 본문 레이아웃 */
-  .body { display: flex; flex-direction: row; padding: 16px; gap: 16px; align-items: flex-start; }
+  .body { display: flex; flex-direction: row; padding: 8px; gap: 8px; align-items: stretch; flex: 1; overflow: hidden; min-height: 0; }
 
-  /* 왼쪽: 얼굴+입력+버튼 */
-  .left { flex: none; display: flex; flex-direction: column; align-items: center; }
-  .capture-wrap { display: flex; flex-direction: column; align-items: center; background: white; border-radius: 2rem; padding: 12px; }
-  .face-box { width: 260px; height: 380px; display: flex; align-items: center; justify-content: center; background: #eff6ff; border-radius: 2rem; border: 4px dashed #bfdbfe; position: relative; overflow: hidden; }
-  .face-box svg { width: 230px; height: 370px; overflow: visible; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15)); }
-  #emotion-input { margin-top: 16px; width: 100%; padding: 12px 16px; border-radius: 12px; border: 4px solid #fef08a; background: #fefce8; color: #713f12; font-family: 'Nanum Gothic', sans-serif; font-size: 17px; font-weight: 700; text-align: center; outline: none; }
+  /* 왼쪽: 얼굴+입력+버튼 — 고정 너비 */
+  .left {
+    flex: 0 0 auto;
+    width: 28%;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    gap: 5px; min-height: 0;
+  }
+  .capture-wrap {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column; align-items: center;
+    background: white; border-radius: 1.2rem; padding: 6px; width: 100%;
+  }
+  .face-box {
+    flex: 1; min-height: 0; width: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: #eff6ff; border-radius: 1rem; border: 3px dashed #bfdbfe;
+    position: relative; overflow: hidden;
+  }
+  .face-box svg { width: 88%; height: 88%; overflow: visible; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15)); }
+  #emotion-input {
+    flex-shrink: 0; margin-top: 5px; width: 100%;
+    padding: 8px 8px; border-radius: 8px; border: 3px solid #fef08a;
+    background: #fefce8; color: #713f12; font-family: 'Nanum Gothic', sans-serif;
+    font-size: clamp(11px, 1.4vh, 14px); font-weight: 700; text-align: center; outline: none;
+    line-height: 1.6; height: auto; min-height: 0;
+  }
   #emotion-input:focus { border-color: #facc15; }
   #emotion-input::placeholder { color: #fde68a; }
-  .btn-row { margin-top: 12px; display: flex; gap: 8px; width: 250px; }
-  .btn { flex: 1; padding: 12px; border: none; border-radius: 12px; font-family: 'Nanum Gothic', sans-serif; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
+  .btn-row { flex-shrink: 0; display: flex; gap: 5px; width: 100%; }
+  .btn { flex: 1; padding: 6px 4px; border: none; border-radius: 8px; font-family: 'Nanum Gothic', sans-serif; font-size: clamp(10px, 1.3vh, 13px); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 3px; transition: all 0.2s; white-space: nowrap; }
   .btn-reset { background: #f3f4f6; color: #374151; }
   .btn-reset:hover { background: #e5e7eb; }
-  .btn-save { background: #22c55e; color: white; box-shadow: 0 4px 12px rgba(34,197,94,0.3); }
+  .btn-save { background: #22c55e; color: white; box-shadow: 0 3px 8px rgba(34,197,94,0.3); }
   .btn-save:hover { background: #16a34a; }
   .btn-save:disabled { background: #86efac; cursor: not-allowed; }
-  .save-spinner { width: 18px; height: 18px; border: 3px solid white; border-top: 3px solid transparent; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  .save-spinner { width: 13px; height: 13px; border: 2px solid white; border-top: 2px solid transparent; border-radius: 50%; animation: spin 0.6s linear infinite; }
 
   /* 오른쪽: 탭+선택 패널 */
-  .right { flex: 1; display: flex; flex-direction: column; }
-  .tabs { display: flex; gap: 4px; margin-bottom: 8px; }
-  .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 12px; font-family: 'Nanum Gothic', sans-serif; font-size: 16px; font-weight: 900; cursor: pointer; transition: all 0.2s; border-bottom: 4px solid transparent; }
-  .tab-btn.active { background: #facc15; color: white; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-bottom: 4px solid #ca8a04; }
+  .right { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 5px; flex-shrink: 0; }
+  .tab-btn { flex: 1; padding: 5px 4px; border: none; border-radius: 8px; font-family: 'Nanum Gothic', sans-serif; font-size: clamp(11px, 1.4vh, 13px); font-weight: 900; cursor: pointer; transition: all 0.2s; border-bottom: 3px solid transparent; }
+  .tab-btn.active { background: #facc15; color: white; box-shadow: 0 3px 6px rgba(0,0,0,0.1); border-bottom: 3px solid #ca8a04; }
   .tab-btn:not(.active) { background: #fef9c3; color: #713f12; }
   .tab-btn:not(.active):hover { background: #fef08a; }
 
-  .panel { background: #fff7ed; padding: 12px; border-radius: 1.5rem; border: 4px solid #fed7aa; box-shadow: inset 0 2px 8px rgba(0,0,0,0.05); overflow-y: auto; max-height: 500px; cursor: grab; }
+  .panel { background: #fff7ed; padding: 6px; border-radius: 1rem; border: 3px solid #fed7aa; box-shadow: inset 0 2px 6px rgba(0,0,0,0.05); overflow-y: auto; flex: 1; min-height: 0; cursor: grab; }
   .panel:active { cursor: grabbing; }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .part-btn { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: white; border-radius: 12px; border: 4px solid transparent; cursor: pointer; transition: all 0.2s; }
-  .part-btn:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-color: #fef9c3; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .part-btn { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: white; border-radius: 8px; border: 2px solid transparent; cursor: pointer; transition: all 0.2s; }
+  .part-btn:hover { box-shadow: 0 3px 8px rgba(0,0,0,0.1); border-color: #fef9c3; }
   .part-btn.selected { border-color: #eab308; background: #fefce8; transform: scale(1.05); }
-  .part-btn svg { width: 100%; height: 100%; padding: 4px; overflow: visible; }
-
-  footer { margin-top: 24px; color: rgba(113,63,18,0.3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 12px; text-align: center; }
+  .part-btn svg { width: 100%; height: 100%; padding: 2px; overflow: visible; }
 </style>
 </head>
 <body>
@@ -72,7 +101,7 @@
 
 <!-- 앱 본체 -->
 <div class="card">
-  <header><h1>감정을 표정으로 표현해요</h1></header>
+  <header><h1>😊 감정 표정 만들기</h1></header>
   <div class="body">
     <!-- 왼쪽 -->
     <div class="left">
@@ -97,7 +126,7 @@
     </div>
   </div>
 </div>
-<footer>Emotion Maker for Kids • 2024</footer>
+
 
 <script>
 // ── SVG 헬퍼 ──────────────────────────────────────────────
