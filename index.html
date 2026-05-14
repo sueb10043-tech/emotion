@@ -18,10 +18,10 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
 
-  /* 카드: 패드 기준 비율로 꽉 채움 */
+  /* 카드: 패드 기준 비율로 꽉 채움 (모바일: dvh 적용) */
   .card {
-    width: min(100vw, calc(100vh * (19.5/11)));
-    height: min(100vh, calc(100vw * (11/19.5)));
+    width: min(100vw, calc(100dvh * (19.5/11)));
+    height: min(100dvh, calc(100vw * (11/19.5)));
     background: white;
     border-radius: 1.5rem;
     box-shadow: 0 12px 40px rgba(0,0,0,0.15);
@@ -31,12 +31,12 @@
     flex-direction: column;
   }
 
-  /* PC 화면(1024px 이상)에서는 적당한 크기로 제한 */
+  /* PC 화면(1024px 이상)에서는 vh 유지 + 고정 크기 */
   @media (min-width: 1024px) {
     body { background: #fdf2f8; }
     .card {
-      width: 860px;
-      height: 484px;
+      width: 1290px;
+      height: 726px;
     }
   }
   header { background: #facc15; padding: 6px 12px; text-align: center; flex-shrink: 0; }
@@ -56,6 +56,7 @@
     flex: 1; min-height: 0;
     display: flex; flex-direction: column; align-items: center;
     background: white; border-radius: 1.2rem; padding: 6px; width: 100%;
+    overflow: hidden;
   }
   .face-box {
     flex: 1; min-height: 0; width: 100%;
@@ -63,13 +64,19 @@
     background: #eff6ff; border-radius: 1rem; border: 3px dashed #bfdbfe;
     position: relative; overflow: hidden;
   }
-  .face-box svg { width: 114%; height: 114%; overflow: visible; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15)); }
+  .face-box svg {
+    /* 세로 기준으로 크기를 맞춰 가로 찌그러짐 방지 */
+    width: auto; height: 114%;
+    max-width: 114%;
+    overflow: visible; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15));
+  }
   #emotion-input {
     flex-shrink: 0; margin-top: 5px; width: 100%;
     padding: 12px 8px; border-radius: 8px; border: 3px solid #fef08a;
     background: #fefce8; color: #713f12; font-family: 'Nanum Gothic', sans-serif;
     font-size: clamp(13px, 1.8vh, 17px); font-weight: 700; text-align: center; outline: none;
-    line-height: 1.6; height: auto; min-height: 0;
+    line-height: 1.6; box-sizing: border-box;
+    vertical-align: middle;
   }
   #emotion-input:focus { border-color: #facc15; }
   #emotion-input::placeholder { color: #fde68a; }
@@ -116,7 +123,7 @@
     <div class="left">
       <div class="capture-wrap" id="capture-area">
         <div class="face-box">
-          <svg id="face-svg" viewBox="-5 -65 210 280">
+          <svg id="face-svg" viewBox="-5 -65 210 280" preserveAspectRatio="xMidYMid meet">
           </svg>
         </div>
         <input type="text" id="emotion-input" placeholder="내 감정을 써봐요 ✏️" />
@@ -339,8 +346,41 @@ async function saveImage() {
   btn.disabled = true;
   btn.innerHTML = '<div class="save-spinner"></div> 저장 중...';
   try {
+    const input = document.getElementById('emotion-input');
     const area = document.getElementById('capture-area');
-    const canvas = await html2canvas(area, { backgroundColor: '#ffffff', scale: 2 });
+
+    // input을 잠깐 숨기고 대신 div로 교체해서 캡처
+    input.style.display = 'none';
+
+    const textDiv = document.createElement('div');
+    const cs = window.getComputedStyle(input);
+    textDiv.style.cssText = `
+      width: 100%;
+      padding: ${cs.padding};
+      border-radius: ${cs.borderRadius};
+      border: ${cs.border};
+      background: ${cs.backgroundColor};
+      color: ${cs.color};
+      font-family: ${cs.fontFamily};
+      font-size: ${cs.fontSize};
+      font-weight: ${cs.fontWeight};
+      text-align: center;
+      line-height: ${cs.lineHeight};
+      box-sizing: border-box;
+      margin-top: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: ${cs.height};
+    `;
+    textDiv.textContent = input.value || '';
+    area.appendChild(textDiv);
+
+    const canvas = await html2canvas(area, { backgroundColor: '#ffffff', scale: 2, useCORS: true });
+
+    area.removeChild(textDiv);
+    input.style.display = '';
+
     const link = document.createElement('a');
     link.download = '나만의_표정.png';
     link.href = canvas.toDataURL('image/png');
