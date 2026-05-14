@@ -74,11 +74,10 @@
   }
   #emotion-input {
     flex-shrink: 0; margin-top: 5px; width: 100%;
-    padding: 12px 8px; border-radius: 8px; border: 3px solid #fef08a;
+    padding: 18px 8px; border-radius: 8px; border: 3px solid #fef08a;
     background: #fefce8; color: #713f12; font-family: 'Nanum Gothic', sans-serif;
-    font-size: clamp(13px, 1.8vh, 17px); font-weight: 700; text-align: center; outline: none;
-    line-height: 1.6; box-sizing: border-box;
-    vertical-align: middle;
+    font-size: clamp(19px, 2.7vh, 25px); font-weight: 700; text-align: center; outline: none;
+    line-height: 1; box-sizing: border-box;
   }
   #emotion-input:focus { border-color: #facc15; }
   #emotion-input::placeholder { color: #fde68a; }
@@ -256,7 +255,6 @@ const tabLabels = { brows:'눈썹', eyes:'눈', mouth:'입', nose:'코/장식' }
 const limitedTabs = ['brows','mouth','nose']; // 9개로 제한
 let selected = { brows:-1, eyes:-1, mouth:-1, nose:-1 };
 let activeTab = 'brows';
-let libLoaded = false;
 
 // ── 얼굴 렌더 ─────────────────────────────────────────────
 function renderFace() {
@@ -341,48 +339,89 @@ function resetFace() {
   renderFace();
 }
 
+
 // ── 저장 ─────────────────────────────────────────────────
 async function saveImage() {
-  if (!libLoaded || !window.html2canvas) return;
   const btn = document.getElementById('save-btn');
   btn.disabled = true;
   btn.innerHTML = '<div class="save-spinner"></div> 저장 중...';
   try {
     const input = document.getElementById('emotion-input');
-    const area = document.getElementById('capture-area');
+    const faceSvg = document.getElementById('face-svg');
+    const faceBox = document.querySelector('.face-box');
+    const faceRect = faceBox.getBoundingClientRect();
+    const inputRect = input.getBoundingClientRect();
 
-    // input을 잠깐 숨기고 대신 div로 교체해서 캡처
-    input.style.display = 'none';
+    const W = 800;
+    const scale = W / faceRect.width;
+    const faceH = Math.round(faceRect.height * scale);
+    const inputH = Math.round(inputRect.height * scale);
+    const pad = 20;
+    const H = pad + faceH + pad + inputH + pad;
 
-    const textDiv = document.createElement('div');
-    const cs = window.getComputedStyle(input);
-    textDiv.style.cssText = `
-      width: 100%;
-      padding: ${cs.padding};
-      border-radius: ${cs.borderRadius};
-      border: ${cs.border};
-      background: ${cs.backgroundColor};
-      color: ${cs.color};
-      font-family: ${cs.fontFamily};
-      font-size: ${cs.fontSize};
-      font-weight: ${cs.fontWeight};
-      text-align: center;
-      line-height: ${cs.lineHeight};
-      box-sizing: border-box;
-      margin-top: 5px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: ${cs.height};
-    `;
-    textDiv.textContent = input.value || '';
-    area.appendChild(textDiv);
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
 
-    const canvas = await html2canvas(area, { backgroundColor: '#ffffff', scale: 2, useCORS: true });
+    // 배경
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
 
-    area.removeChild(textDiv);
-    input.style.display = '';
+    // 파란 카드 배경
+    const bx = pad, by = pad, bw = W - pad*2, bh = faceH;
+    ctx.fillStyle = '#eff6ff';
+    roundRect(ctx, bx, by, bw, bh, 24);
+    ctx.fill();
+    ctx.strokeStyle = '#bfdbfe';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([12, 8]);
+    roundRect(ctx, bx, by, bw, bh, 24);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
+    // SVG → 이미지로 변환해서 캔버스에 그리기
+    const svgData = new XMLSerializer().serializeToString(faceSvg);
+    const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+    const svgUrl = URL.createObjectURL(svgBlob);
+    await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        // 얼굴을 파란 카드 안에 비율 유지하며 중앙 배치
+        const scale = Math.min(bw / img.width, bh / img.height) * 1.14;
+        const dw = img.width * scale;
+        const dh = img.height * scale;
+        const dx = bx + (bw - dw) / 2;
+        const dy = by + (bh - dh) / 2;
+        ctx.drawImage(img, dx, dy, dw, dh);
+        URL.revokeObjectURL(svgUrl);
+        resolve();
+      };
+      img.onerror = reject;
+      img.src = svgUrl;
+    });
+
+    // 입력창 배경
+    const ix = pad, iy = pad + faceH + pad, iw = W - pad*2, ih = inputH;
+    ctx.fillStyle = '#fefce8';
+    roundRect(ctx, ix, iy, iw, ih, 12);
+    ctx.fill();
+    ctx.strokeStyle = '#fef08a';
+    ctx.lineWidth = 4;
+    roundRect(ctx, ix, iy, iw, ih, 12);
+    ctx.stroke();
+
+    // 입력 글씨
+    const text = input.value || '';
+    if (text) {
+      ctx.fillStyle = '#713f12';
+      ctx.font = `bold ${Math.round(ih * 0.42)}px 'Nanum Gothic', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, W / 2, iy + ih / 2);
+    }
+
+    // 다운로드
     const link = document.createElement('a');
     link.download = '나만의_표정.png';
     link.href = canvas.toDataURL('image/png');
@@ -391,6 +430,20 @@ async function saveImage() {
     btn.disabled = false;
     btn.innerHTML = '↓ 저장하기';
   }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
 
 // ── 드래그 스크롤 ─────────────────────────────────────────
@@ -403,13 +456,6 @@ panel.addEventListener('mousedown', e => {
   window.addEventListener('mousemove', onMove);
   window.addEventListener('mouseup', onUp);
 });
-
-// ── html2canvas 백그라운드 로드 ──────────────────────────
-const script = document.createElement('script');
-script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-script.async = true;
-script.onload = () => { libLoaded = true; };
-document.body.appendChild(script);
 
 // ── 초기화 (앱 즉시 표시) ────────────────────────────────
 document.getElementById('spinner').style.display = 'none';
