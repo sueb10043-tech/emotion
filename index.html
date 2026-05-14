@@ -18,10 +18,12 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
 
-  /* 카드: 패드 기준 비율로 꽉 채움 (모바일: dvh 적용) */
+  /* 카드: 패드 기준 비율로 꽉 채움 (모바일: dvh 적용, 절대 잘리지 않음) */
   .card {
     width: min(100vw, calc(100dvh * (19.5/11)));
     height: min(100dvh, calc(100vw * (11/19.5)));
+    max-width: 100vw;
+    max-height: 100dvh;
     background: white;
     border-radius: 1.5rem;
     box-shadow: 0 12px 40px rgba(0,0,0,0.15);
